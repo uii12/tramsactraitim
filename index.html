@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Slow</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: black;
+      overflow: hidden;
+      touch-action: none;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+    #fingerprint {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 100px;
+      height: 100px;
+      transform: translate(-50%, -50%);
+      background: url('https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/Fingerprint_icon.svg/200px-Fingerprint_icon.svg.png') no-repeat center;
+      background-size: contain;
+      opacity: 0.5;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .nd{
+      color: red;
+      width: 200px;
+      font-size: 2rem;
+    margin-left: -20%;
+    margin-top: -200px;
+      align-content: center;
+      
+    }
+   
+  </style>
+</head>
+<body>
+
+<div id="fingerprint">
+   <div class="nd">chạm và giữ </div> 
+</div>
+<canvas id="heartbeatCanvas"></canvas>
+
+
+<script>
+  let holdStartTime = null;
+  let holdChecker = null;
+  const canvas = document.getElementById('heartbeatCanvas');
+  const ctx = canvas.getContext('2d');
+  const fingerprint = document.getElementById('fingerprint');
+
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  const midY = canvas.height / 2;
+  const speed = 0.2; // ✅ Chạy cực kỳ chậm
+  const pattern = [
+  { dx: 15, dy: 0 }, { dx: 15, dy: 0 }, // đoạn đầu ổn định
+  { dx: 10, dy: -20 },
+  { dx: 10, dy: 60 },
+  { dx: 10, dy: -80 },
+  { dx: 10, dy: 40 },
+  { dx: 15, dy: 0 }, // đoạn phục hồi ngắn hơn
+  { dx: 10, dy: -10 },
+  { dx: 10, dy: 10 },
+  { dx: 20, dy: 0 }, // đoạn thẳng ngắn lại để nhịp tới gần hơn
+];
+
+  let points = [];
+  let currentIndex = 0;
+  let lastPoint = { x: 0, y: midY };
+  let heartPulse = 0;
+  let running = false;
+
+  function drawGrid() {
+    const gridSize = 20;
+    ctx.strokeStyle = "#04395E";
+    ctx.lineWidth = 0.5;
+
+    for (let x = 0; x < canvas.width; x += gridSize) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, canvas.height);
+      ctx.stroke();
+    }
+
+    for (let y = 0; y < canvas.height; y += gridSize) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(canvas.width, y);
+      ctx.stroke();
+    }
+  }
+
+  function drawHeart(x, y, scale) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.bezierCurveTo(0, -10, -15, -15, -15, -30);
+    ctx.bezierCurveTo(-15, -50, 0, -45, 0, -30);
+    ctx.bezierCurveTo(0, -45, 15, -50, 15, -30);
+    ctx.bezierCurveTo(15, -15, 0, -10, 0, 0);
+    ctx.closePath();
+    ctx.fillStyle = '#FF4C4C';
+    ctx.shadowColor = '#FF4C4C';
+    ctx.shadowBlur = 20;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawGrid();
+
+    ctx.beginPath();
+    if (points.length > 0) {
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(points[i].x, points[i].y);
+      }
+      ctx.strokeStyle = 'cyan';
+      ctx.lineWidth = 2;
+      ctx.shadowColor = 'cyan';
+      ctx.shadowBlur = 8;
+      ctx.stroke();
+
+      // Vẽ trái tim
+      const last = points[points.length - 1];
+      const scale = 1 + Math.sin(heartPulse) * 0.2;
+      drawHeart(last.x + 15, last.y, scale);
+    }
+  }
+
+  function update() {
+    if (!running) return;
+
+    for (let pt of points) {
+      pt.x -= speed;
+    }
+    points = points.filter(pt => pt.x >= -30);
+
+    const step = pattern[currentIndex];
+    const newX = lastPoint.x + step.dx;
+    const newY = lastPoint.y + step.dy;
+    points.push({ x: newX, y: newY });
+    lastPoint = { x: newX, y: newY };
+    currentIndex = (currentIndex + 1) % pattern.length;
+
+    heartPulse += 0.03;
+
+    if (lastPoint.x > canvas.width) {
+      points = [{ x: 0, y: midY }];
+      lastPoint = { x: 0, y: midY };
+      currentIndex = 0;
+    }
+
+    draw();
+    setTimeout(update, 10000); //tốc độ nhịp tim
+  }
+
+let animationId = null;
+
+function startHeartbeat() {
+  if (!running) {
+    running = true;
+    fingerprint.style.display = 'none';
+    if (points.length === 0) {
+      points.push({ x: 0, y: midY });
+      lastPoint = { x: 0, y: midY };
+    }
+    update();
+
+    holdStartTime = Date.now();
+    holdChecker = setInterval(() => {
+      const heldTime = (Date.now() - holdStartTime) / 1000;
+      if (heldTime >= 5) {
+        clearInterval(holdChecker);
+        window.location.href = "index3.html"; // 👉 Chuyển trang sau 5 giữ liên tục
+      }
+    }, 1000);
+  }
+}
+
+function stopHeartbeat() {
+  running = false;
+  points = [];
+  lastPoint = { x: 0, y: midY };
+  currentIndex = 0;
+  fingerprint.style.display = 'block';
+  cancelAnimationFrame(animationId);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawGrid();
+
+  clearInterval(holdChecker); // ⛔ Hủy đếm nếu buông
+  holdStartTime = null;
+}
+
+function update() {
+  if (!running) return;
+
+  for (let pt of points) pt.x -= speed;
+  points = points.filter(pt => pt.x >= -30);
+
+  const step = pattern[currentIndex];
+  const newX = lastPoint.x + step.dx;
+  const newY = lastPoint.y + step.dy;
+  points.push({ x: newX, y: newY });
+  lastPoint = { x: newX, y: newY };
+  currentIndex = (currentIndex + 1) % pattern.length;
+
+  heartPulse += 0.03;
+  if (lastPoint.x > canvas.width) {
+    points = [{ x: 0, y: midY }];
+    lastPoint = { x: 0, y: midY };
+    currentIndex = 0;
+  }
+
+  draw();
+  animationId = setTimeout(update, 40);;
+}
+
+canvas.addEventListener('touchstart', startHeartbeat);
+canvas.addEventListener('mousedown', startHeartbeat);
+canvas.addEventListener('touchend', stopHeartbeat);
+canvas.addEventListener('mouseup', stopHeartbeat);
+
+
+</script>
+</body>
+</html>
