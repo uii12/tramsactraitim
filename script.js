@@ -1,132 +1,131 @@
 
-// Các bạn có thể thay đổi giá trị các biến môi trường ở đây:
-var radius = 240; // Độ rộng vòng xoay
-var autoRotate = true; // Tự động xoay hay không
-var rotateSpeed = -30; // đơn vị: giây/vòng. thời gian để xoay hết 1 vòng, dấu trừ để xoay ngược lại
-var imgWidth = 150; // độ rộng ảnh (tính theo px)
-var imgHeight = 170; // độ cao ảnh (tính theo px)
+
+  // Các bạn có thể thay đổi giá trị các biến môi trường ở đây:
+  var radius = 240; // Độ rộng vòng xoay
+  var autoRotate = true; // Tự động xoay hay không
+  var rotateSpeed = -10; // đơn vị: giây/vòng. thời gian để xoay hết 1 vòng, dấu trừ để xoay ngược lại
+  var imgWidth = 120; // độ rộng ảnh (tính theo px)
+  var imgHeight = 170; // độ cao ảnh (tính theo px)
+
+  // Link nhạc nền - cho bằng null nếu không muốn nhạc nền
+  var bgMusicURL = 'Y2meta.app - [Vietsub] Có Thể Hay Không_可不可以 - Trương Tử Hào_張紫豪 (128 kbps).mp3';
+  var bgMusicControls = true; // Hiện khung điều khiển nhạc nền hay không
+
+  /*
+      CHÚ Ý:
+        + imgWidth, imgHeight sẽ dùng được cho cả video -> <video> cũng sẽ được thu nhỏ cho bằng <img>
+        + nếu imgWidth, imgHeight đủ nhỏ, có thể <video> sẽ không hiện nút play/pause
+        + Link nhạc lấy từ: https://hoangtran0410.github.io/Visualyze-design-your-own-/?theme=HoangTran&playlist=2&song=8&background=3
+        + https://api.soundcloud.com/tracks/191576787/stream?client_id=587aa2d384f7333a886010d5f52f302a
+        + Custom from code in tiktok video  https://www.facebook.com/J2TEAM.ManhTuan/videos/1353367338135935/
+  */
 
 
-// Link nhạc nền - cho bằng null nếu không muốn nhạc nền
-var bgMusicURL = 'Y2meta.app - [Vietsub] Có Thể Hay Không_可不可以 - Trương Tử Hào_張紫豪 (128 kbps).mp3';
-var bgMusicControls = false; // Hiện khung điều khiển nhạc nền hay không
+  // ===================== start =======================
+  setTimeout(init, 100);
 
-/*
-     CHÚ Ý:
-       + imgWidth, imgHeight sẽ dùng được cho cả video -> <video> cũng sẽ được thu nhỏ cho bằng <img>
-       + nếu imgWidth, imgHeight đủ nhỏ, có thể <video> sẽ không hiện nút play/pause
-       + Link nhạc lấy từ: https://hoangtran0410.github.io/Visualyze-design-your-own-/?theme=HoangTran&playlist=2&song=8&background=3
-       + https://api.soundcloud.com/tracks/191576787/stream?client_id=587aa2d384f7333a886010d5f52f302a
-       + Custom from code in tiktok video  https://www.facebook.com/J2TEAM.ManhTuan/videos/1353367338135935/
-*/
+  var obox = document.getElementById('drag-container');
+  var ospin = document.getElementById('spin-container');
+  var aImg = ospin.getElementsByTagName('img');
+  var aVid = ospin.getElementsByTagName('video');
+  var aEle = [...aImg, ...aVid]; // gộp 2 mảng lại
 
+  // chỉnh độ lớn ảnh
+  ospin.style.width = imgWidth + "px";
+  ospin.style.height = imgHeight + "px";
 
-// ===================== start =======================
-setTimeout(init, 100);
+  // chỉnh độ lớn ground - theo radius
+  var ground = document.getElementById('ground');
+  ground.style.width = radius * 3 + "px";
+  ground.style.height = radius * 3 + "px";
 
-var obox = document.getElementById('drag-container');
-var ospin = document.getElementById('spin-container');
-var aImg = ospin.getElementsByTagName('img');
-var aVid = ospin.getElementsByTagName('video');
-var aEle = [...aImg, ...aVid]; // gộp 2 mảng lại
-
-// chỉnh độ lớn ảnh
-ospin.style.width = imgWidth + "px";
-ospin.style.height = imgHeight + "px";
-
-// chỉnh độ lớn ground - theo radius
-var ground = document.getElementById('ground');
-ground.style.width = radius * 3 + "px";
-ground.style.height = radius * 3 + "px";
-
-function init(delayTime) {
-  for (var i = 0; i < aEle.length; i++) {
-    aEle[i].style.transform = "rotateY(" + (i * (360 / aEle.length)) + "deg) translateZ(" + radius + "px)";
-    aEle[i].style.transition = "transform 1s";
-    aEle[i].style.transitionDelay = delayTime || (aEle.length - i) / 4 + "s";
+  function init(delayTime) {
+    for (var i = 0; i < aEle.length; i++) {
+      aEle[i].style.transform = "rotateY(" + (i * (360 / aEle.length)) + "deg) translateZ(" + radius + "px)";
+      aEle[i].style.transition = "transform 1s";
+      aEle[i].style.transitionDelay = delayTime || (aEle.length - i) / 4 + "s";
+    }
   }
-}
 
-function applyTranform() {
-  if (tY > 180) tY = 180;
-  if (tY < 0) tY = 0;
-  ospin.style.transform = "rotateX(" + (-tY) + "deg) rotateY(" + tX + "deg)";
-}
+  function applyTranform(obj) {
+    // Không cho góc xoay phương Y ra ngoài khoảng 0-180
+    if(tY > 180) tY = 180;
+    if(tY < 0) tY = 0;
 
-function playSpin(yes) {
-  ospin.style.animationPlayState = (yes?'running':'paused');
-}
+    // Áp dụng góc xoay
+    obj.style.transform = "rotateX(" + (-tY) + "deg) rotateY(" + (tX) + "deg)";
+  }
 
-var sX, sY, nX, nY, desX = 0,
-    desY = 0,
-    tX = 0,
-    tY = 10;
+  function playSpin(yes) {
+    ospin.style.animationPlayState = (yes?'running':'paused');
+  }
 
-// tự động xoay
-if (autoRotate) {
-  var animationName = (rotateSpeed > 0 ? 'spin' : 'spinRevert');
-  ospin.style.animation = `${animationName} ${Math.abs(rotateSpeed)}s infinite linear`;
-}
+  var sX, sY, nX, nY, desX = 0,
+      desY = 0,
+      tX = 0,
+      tY = 10;
 
-// thêm nhạc nền
-if (bgMusicURL) {
-  document.getElementById('music-container').innerHTML += `
-<audio src="${bgMusicURL}" ${bgMusicControls? 'controls': ''} autoplay loop>    
-<p>If you are reading this, it is because your browser does not support the audio element.</p>
-</audio>
-`;
-}
+  // tự động xoay
+  if (autoRotate) {
+    var animationName = (rotateSpeed > 0 ? 'spin' : 'spinRevert');
+    ospin.style.animation = `${animationName} ${Math.abs(rotateSpeed)}s infinite linear`;
+  }
 
-// cài đặt events
-function startDrag(e) {
-  clearInterval(obox.timer);
-  e = e || window.event;
-  sX = (e.clientX || e.touches[0].clientX);
-  sY = (e.clientY || e.touches[0].clientY);
+  // thêm nhạc nền
+  if (bgMusicURL) {
+    document.getElementById('music-container').innerHTML += `
+  <audio src="${bgMusicURL}" ${bgMusicControls? 'controls': ''} autoplay loop>    
+  <p>If you are reading this, it is because your browser does not support the audio element.</p>
+  </audio>
+  `;
+  }
 
-  document.onpointermove = document.ontouchmove = function (e) {
+  // cài đặt events
+  document.onpointerdown = function (e) {
+    clearInterval(obox.timer);
     e = e || window.event;
-    nX = (e.clientX || e.touches[0].clientX);
-    nY = (e.clientY || e.touches[0].clientY);
-    desX = nX - sX;
-    desY = nY - sY;
-    tX += desX * 0.1;
-    tY += desY * 0.1;
-    applyTranform();
-    sX = nX;
-    sY = nY;
-  };
+    var sX = e.clientX,
+        sY = e.clientY;
 
-  document.onpointerup = document.ontouchend = function () {
-    obox.timer = setInterval(function () {
-      desX *= 0.95;
-      desY *= 0.95;
+    this.onpointermove = function (e) {
+      e = e || window.event;
+      var nX = e.clientX,
+          nY = e.clientY;
+      desX = nX - sX;
+      desY = nY - sY;
       tX += desX * 0.1;
       tY += desY * 0.1;
-      applyTranform();
-      playSpin(false);
-      if (Math.abs(desX) < 0.5 && Math.abs(desY) < 0.5) {
-        clearInterval(obox.timer);
-        playSpin(true);
-      }
-    }, 17);
+      applyTranform(obox);
+      sX = nX;
+      sY = nY;
+    };
 
-    document.onpointermove = document.ontouchmove = null;
-    document.onpointerup = document.ontouchend = null;
+    this.onpointerup = function (e) {
+      obox.timer = setInterval(function () {
+        desX *= 0.95;
+        desY *= 0.95;
+        tX += desX * 0.1;
+        tY += desY * 0.1;
+        applyTranform(obox);
+        playSpin(false);
+        if (Math.abs(desX) < 0.5 && Math.abs(desY) < 0.5) {
+          clearInterval(obox.timer);
+          playSpin(true);
+        }
+      }, 17);
+      this.onpointermove = this.onpointerup = null;
+    };
+
+    return false;
   };
 
-  return false;
-}
+  document.onmousewheel = function(e) {
+    e = e || window.event;
+    var d = e.wheelDelta / 20 || -e.detail;
+    radius += d;
+    init(1);
+  };
 
-document.onpointerdown = startDrag;
-document.ontouchstart = startDrag;
-
-document.onmousewheel = function(e) {
-  e = e || window.event;
-  var d = e.wheelDelta / 20 || -e.detail;
-  radius += d;
-  init(1);
-};
 
 // tim neon
 var canvas = document.getElementById("canvas");
