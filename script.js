@@ -1,10 +1,11 @@
 
 // Các bạn có thể thay đổi giá trị các biến môi trường ở đây:
-var radius = 200; // Độ rộng vòng xoay
+var radius = 240; // Độ rộng vòng xoay
 var autoRotate = true; // Tự động xoay hay không
 var rotateSpeed = -30; // đơn vị: giây/vòng. thời gian để xoay hết 1 vòng, dấu trừ để xoay ngược lại
 var imgWidth = 150; // độ rộng ảnh (tính theo px)
 var imgHeight = 170; // độ cao ảnh (tính theo px)
+
 
 // Link nhạc nền - cho bằng null nếu không muốn nhạc nền
 var bgMusicURL = 'Y2meta.app - [Vietsub] Có Thể Hay Không_可不可以 - Trương Tử Hào_張紫豪 (128 kbps).mp3';
@@ -46,13 +47,10 @@ function init(delayTime) {
   }
 }
 
-function applyTranform(obj) {
-  // Không cho góc xoay phương Y ra ngoài khoảng 0-180
-  if(tY > 180) tY = 180;
-  if(tY < 0) tY = 0;
-
-  // Áp dụng góc xoay
-  obj.style.transform = "rotateX(" + (-tY) + "deg) rotateY(" + (tX) + "deg)";
+function applyTranform() {
+  if (tY > 180) tY = 180;
+  if (tY < 0) tY = 0;
+  ospin.style.transform = "rotateX(" + (-tY) + "deg) rotateY(" + tX + "deg)";
 }
 
 function playSpin(yes) {
@@ -80,43 +78,48 @@ if (bgMusicURL) {
 }
 
 // cài đặt events
-document.onpointerdown = function (e) {
+function startDrag(e) {
   clearInterval(obox.timer);
   e = e || window.event;
-  var sX = e.clientX,
-      sY = e.clientY;
+  sX = (e.clientX || e.touches[0].clientX);
+  sY = (e.clientY || e.touches[0].clientY);
 
-  this.onpointermove = function (e) {
+  document.onpointermove = document.ontouchmove = function (e) {
     e = e || window.event;
-    var nX = e.clientX,
-        nY = e.clientY;
+    nX = (e.clientX || e.touches[0].clientX);
+    nY = (e.clientY || e.touches[0].clientY);
     desX = nX - sX;
     desY = nY - sY;
     tX += desX * 0.1;
     tY += desY * 0.1;
-    applyTranform(obox);
+    applyTranform();
     sX = nX;
     sY = nY;
   };
 
-  this.onpointerup = function (e) {
+  document.onpointerup = document.ontouchend = function () {
     obox.timer = setInterval(function () {
       desX *= 0.95;
       desY *= 0.95;
       tX += desX * 0.1;
       tY += desY * 0.1;
-      applyTranform(obox);
+      applyTranform();
       playSpin(false);
       if (Math.abs(desX) < 0.5 && Math.abs(desY) < 0.5) {
         clearInterval(obox.timer);
         playSpin(true);
       }
     }, 17);
-    this.onpointermove = this.onpointerup = null;
+
+    document.onpointermove = document.ontouchmove = null;
+    document.onpointerup = document.ontouchend = null;
   };
 
   return false;
-};
+}
+
+document.onpointerdown = startDrag;
+document.ontouchstart = startDrag;
 
 document.onmousewheel = function(e) {
   e = e || window.event;
