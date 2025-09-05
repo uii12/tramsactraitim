@@ -9,7 +9,7 @@
 
   // Link nhạc nền - cho bằng null nếu không muốn nhạc nền
   var bgMusicURL = 'Y2meta.app - [Vietsub] Có Thể Hay Không_可不可以 - Trương Tử Hào_張紫豪 (128 kbps).mp3';
-  var bgMusicControls = true; // Hiện khung điều khiển nhạc nền hay không
+  var bgMusicControls = false; // Hiện khung điều khiển nhạc nền hay không
 
   /*
       CHÚ Ý:
@@ -399,3 +399,4 @@ function draw(){
 }
 
 draw();
+
